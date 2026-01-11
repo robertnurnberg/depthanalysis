@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -24,10 +25,10 @@ using json = nlohmann::json;
 using namespace chess;
 
 using date_map_t = phmap::parallel_flat_hash_map<
-    std::string, std::pair<int, int>, std::hash<std::string>,
+    std::string, std::pair<uint64_t, uint64_t>, std::hash<std::string>,
     std::equal_to<std::string>,
-    std::allocator<std::pair<const std::string, std::pair<int, int>>>, 8,
-    std::mutex>;
+    std::allocator<std::pair<const std::string, std::pair<uint64_t, uint64_t>>>,
+    8, std::mutex>;
 
 date_map_t date_map;
 
@@ -144,7 +145,7 @@ public:
             p.second.second += 1;
           },
           [&](const date_map_t::constructor &ctor) {
-            ctor(std::move(key), std::pair<int, int>(depth, 1));
+            ctor(std::move(key), std::pair<uint64_t, uint64_t>(depth, 1));
           });
     }
 
@@ -568,8 +569,8 @@ int main(int argc, char const *argv[]) {
   process(files_pgn, regex_engine, max_ply, concurrency);
 
   // sort the date_map by date before writing
-  std::vector<std::pair<std::string, std::pair<int, int>>> sorted_data(
-      date_map.begin(), date_map.end());
+  std::vector<std::pair<std::string, std::pair<uint64_t, uint64_t>>>
+      sorted_data(date_map.begin(), date_map.end());
 
   std::sort(sorted_data.begin(), sorted_data.end(),
             [](const auto &a, const auto &b) { return a.first < b.first; });
