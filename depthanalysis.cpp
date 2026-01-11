@@ -24,8 +24,10 @@ using json = nlohmann::json;
 using namespace chess;
 
 using date_map_t = phmap::parallel_flat_hash_map<
-    std::string, std::pair<int, int>, std::hash<std::string>, std::equal_to<std::string>,
-    std::allocator<std::pair<const std::string, std::pair<int, int>>>, 8, std::mutex>;
+    std::string, std::pair<int, int>, std::hash<std::string>,
+    std::equal_to<std::string>,
+    std::allocator<std::pair<const std::string, std::pair<int, int>>>, 8,
+    std::mutex>;
 
 date_map_t date_map;
 
@@ -39,10 +41,10 @@ namespace analysis {
 
 class Analyze : public pgn::Visitor {
 public:
-  Analyze(std::string_view file, const std::string &regex_engine,
-          int max_ply, std::mutex &progress_output)
-      : file(file), regex_engine(regex_engine), 
-        max_ply(max_ply), progress_output(progress_output) {}
+  Analyze(std::string_view file, const std::string &regex_engine, int max_ply,
+          std::mutex &progress_output)
+      : file(file), regex_engine(regex_engine), max_ply(max_ply),
+        progress_output(progress_output) {}
 
   virtual ~Analyze() {}
 
@@ -137,7 +139,10 @@ public:
       auto key = date;
       date_map.lazy_emplace_l(
           std::move(key),
-          [&](date_map_t::value_type &p) { p.second.first += depth; p.second.second += 1; },
+          [&](date_map_t::value_type &p) {
+            p.second.first += depth;
+            p.second.second += 1;
+          },
           [&](const date_map_t::constructor &ctor) {
             ctor(std::move(key), std::pair<int, int>(depth, 1));
           });
@@ -201,15 +206,14 @@ private:
 };
 
 void ana_files(const std::vector<std::string> &files,
-               const std::string &regex_engine,
-               int max_ply,
+               const std::string &regex_engine, int max_ply,
                std::mutex &progress_output) {
 
   for (const auto &file : files) {
     std::string move_counter;
     const auto pgn_iterator = [&](std::istream &iss) {
-      auto vis = std::make_unique<Analyze>(
-          file, regex_engine, max_ply, progress_output);
+      auto vis = std::make_unique<Analyze>(file, regex_engine, max_ply,
+                                           progress_output);
 
       pgn::StreamParser parser(iss);
 
@@ -400,8 +404,7 @@ public:
 };
 
 void process(const std::vector<std::string> &files_pgn,
-             const std::string &regex_engine,
-             int max_ply, int concurrency) {
+             const std::string &regex_engine, int max_ply, int concurrency) {
   // Create more chunks than threads to prevent threads from idling.
   int target_chunks = 4 * concurrency;
 
@@ -418,10 +421,10 @@ void process(const std::vector<std::string> &files_pgn,
 
   for (const auto &files : files_chunked) {
 
-    pool.enqueue([&files, &regex_engine, &max_ply,
-                  &progress_output, &files_chunked]() {
-      analysis::ana_files(files, regex_engine, max_ply, progress_output);
-    });
+    pool.enqueue(
+        [&files, &regex_engine, &max_ply, &progress_output, &files_chunked]() {
+          analysis::ana_files(files, regex_engine, max_ply, progress_output);
+        });
   }
 
   // Wait for all threads to finish
@@ -564,8 +567,16 @@ int main(int argc, char const *argv[]) {
 
   process(files_pgn, regex_engine, max_ply, concurrency);
 
-  for (const auto &pair : date_map) {
-    out_file << pair.first << "," << pair.second.first << "," << pair.second.second << "\n";
+  // sort the date_map by date before writing
+  std::vector<std::pair<std::string, std::pair<int, int>>> sorted_data(
+      date_map.begin(), date_map.end());
+
+  std::sort(sorted_data.begin(), sorted_data.end(),
+            [](const auto &a, const auto &b) { return a.first < b.first; });
+
+  for (const auto &pair : sorted_data) {
+    out_file << pair.first << "," << pair.second.first << ","
+             << pair.second.second << "\n";
   }
   out_file.close();
 
