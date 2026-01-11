@@ -570,6 +570,7 @@ int main(int argc, char const *argv[]) {
             [](const auto &a, const auto &b) { return a.first < b.first; });
 
   std::ofstream out_file(filename);
+  out_file << "Start_time,Depthsum,Depths\n";
   for (const auto &pair : sorted_data) {
     out_file << pair.first << "," << pair.second.first << ","
              << pair.second.second << "\n";
