@@ -42,10 +42,8 @@ namespace analysis {
 
 class Analyze : public pgn::Visitor {
 public:
-  Analyze(std::string_view file, const std::string &regex_engine, int max_ply,
-          std::mutex &progress_output)
-      : file(file), regex_engine(regex_engine), max_ply(max_ply),
-        progress_output(progress_output) {}
+  Analyze(std::string_view file, const std::string &regex_engine, int max_ply)
+      : file(file), regex_engine(regex_engine), max_ply(max_ply) {}
 
   virtual ~Analyze() {}
 
@@ -186,7 +184,6 @@ private:
   std::string_view file;
   const std::string &regex_engine;
   int max_ply;
-  std::mutex &progress_output;
 
   Board board;
   Movelist moves;
@@ -213,8 +210,7 @@ void ana_files(const std::vector<std::string> &files,
   for (const auto &file : files) {
     std::string move_counter;
     const auto pgn_iterator = [&](std::istream &iss) {
-      auto vis = std::make_unique<Analyze>(file, regex_engine, max_ply,
-                                           progress_output);
+      auto vis = std::make_unique<Analyze>(file, regex_engine, max_ply);
 
       pgn::StreamParser parser(iss);
 
@@ -562,8 +558,6 @@ int main(int argc, char const *argv[]) {
     filename = cmd.get_argument("-o");
   }
 
-  std::ofstream out_file(filename);
-
   const auto t0 = std::chrono::high_resolution_clock::now();
 
   process(files_pgn, regex_engine, max_ply, concurrency);
@@ -575,6 +569,7 @@ int main(int argc, char const *argv[]) {
   std::sort(sorted_data.begin(), sorted_data.end(),
             [](const auto &a, const auto &b) { return a.first < b.first; });
 
+  std::ofstream out_file(filename);
   for (const auto &pair : sorted_data) {
     out_file << pair.first << "," << pair.second.first << ","
              << pair.second.second << "\n";
