@@ -87,8 +87,8 @@ public:
 
   void startMoves() override {
 
-    if (date.empty()) {
-      std::cerr << "No 'Date' found while parsing " << file << '\n';
+    if (date.empty() || date[0] < '0' || date[0] > '9') {
+      std::cerr << "No valid 'Date' found while parsing " << file << '\n';
       this->skipPgn(true);
       return;
     }
