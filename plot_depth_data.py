@@ -49,6 +49,7 @@ class depthdata:
 
         started_rolling = False
         window_delta = timedelta(days=window_days)
+        half_window = timedelta(days=window_days / 2)
         for item in self.data:
             current_date, depthsum, depths = item
             window.append(item)
@@ -66,7 +67,7 @@ class depthdata:
 
             depth_avg = (sum_depthsum / sum_depths) if sum_depths else 0
 
-            self.rolling_dates.append(current_date)
+            self.rolling_dates.append(current_date - half_window)
             self.rolling_depth.append(depth_avg)
 
     def create_graph(self, plot_scatter=True):
